@@ -3,27 +3,40 @@ package svg
 import (
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/JoshVarga/svgparser"
 )
 
+// FormType is an enum to define types of forms.
+type FormType string
+
+const (
+	RectangleType FormType = "rect"
+	CircleType    FormType = "circle"
+	PathType      FormType = "path"
+)
+
+// Measurable defines a svg object for which a length can be calculated.
+type Measurable interface {
+	Length() float64
+}
+
 // RetrieveForms retrieves a list of Forms from the svg source.
-func RetrieveForms(source io.Reader) ([]Form, error) {
+func RetrieveForms(source io.Reader, groupID string) ([]Measurable, error) {
 	svg, err := svgparser.Parse(source, true)
 	if err != nil {
 		return nil, fmt.Errorf("parsing svg file: %w", err)
 	}
 
-	return findForms(svg)
+	return findForms(svg, groupID)
 }
 
-func findForms(element *svgparser.Element) ([]Form, error) {
-	if element == nil {
+func findForms(element *svgparser.Element, groupID string) ([]Measurable, error) {
+	if element == nil || (groupID != "" && element.Name == "g" && element.Attributes["id"] != groupID) {
 		return nil, nil
 	}
 
-	var forms []Form
+	var forms []Measurable
 	switch element.Name {
 	case string(RectangleType):
 		rect, err := parseRectangle(*element)
@@ -37,59 +50,20 @@ func findForms(element *svgparser.Element) ([]Form, error) {
 			return nil, fmt.Errorf("parsing circle: %w", err)
 		}
 		forms = append(forms, circle)
+	case string(PathType):
+		path, err := parsePath(*element)
+		if err != nil {
+			return nil, fmt.Errorf("parsing path: %w", err)
+		}
+		forms = append(forms, path)
 	}
 
 	for i, child := range element.Children {
-		childForms, err := findForms(child)
+		childForms, err := findForms(child, groupID)
 		if err != nil {
 			return nil, fmt.Errorf("searching forms in child %d: %w", i, err)
 		}
 		forms = append(forms, childForms...)
 	}
 	return forms, nil
-}
-
-func parseRectangle(element svgparser.Element) (Rectangle, error) {
-	height, err := strconv.ParseFloat(element.Attributes["height"], 64)
-	if err != nil {
-		return Rectangle{}, fmt.Errorf("parsing height: %w", err)
-	}
-	width, err := strconv.ParseFloat(element.Attributes["width"], 64)
-	if err != nil {
-		return Rectangle{}, fmt.Errorf("parsing witdh: %w", err)
-	}
-	x, err := strconv.ParseFloat(element.Attributes["x"], 64)
-	if err != nil {
-		return Rectangle{}, fmt.Errorf("parsing x: %w", err)
-	}
-	y, err := strconv.ParseFloat(element.Attributes["y"], 64)
-	if err != nil {
-		return Rectangle{}, fmt.Errorf("parsing y: %w", err)
-	}
-	return Rectangle{
-		Height: height,
-		Width:  width,
-		X:      x,
-		Y:      y,
-	}, nil
-}
-
-func parseCircle(element svgparser.Element) (Circle, error) {
-	r, err := strconv.ParseFloat(element.Attributes["r"], 64)
-	if err != nil {
-		return Circle{}, fmt.Errorf("parsing r: %w", err)
-	}
-	x, err := strconv.ParseFloat(element.Attributes["cx"], 64)
-	if err != nil {
-		return Circle{}, fmt.Errorf("parsing cx: %w", err)
-	}
-	y, err := strconv.ParseFloat(element.Attributes["cy"], 64)
-	if err != nil {
-		return Circle{}, fmt.Errorf("parsing cy: %w", err)
-	}
-	return Circle{
-		R: r,
-		X: x,
-		Y: y,
-	}, nil
 }
