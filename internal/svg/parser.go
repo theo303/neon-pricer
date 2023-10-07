@@ -16,9 +16,13 @@ const (
 	PathType      FormType = "path"
 )
 
+type position struct {
+	x, y float64
+}
+
 // Measurable defines a svg object for which a length can be calculated.
 type Measurable interface {
-	Length() float64
+	Length() (float64, error)
 }
 
 // RetrieveForms retrieves a list of Forms from the svg source.

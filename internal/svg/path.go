@@ -2,6 +2,7 @@ package svg
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,18 +20,77 @@ type Path struct {
 	Next       *Path
 }
 
-func (p Path) Length() float64 {
+func (p Path) Length() (float64, error) {
+	return p.length(position{})
+}
+
+func (p Path) length(lastPos position) (float64, error) {
 	var length float64
-	if p.Next != nil {
-		length = p.Next.Length()
-	}
+
 	switch p.Command {
 	case 'M':
-		return 0
+		if len(p.Parameters) != 2 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command M", len(p.Parameters))
+		}
+		lastPos.x = p.Parameters[0]
+		lastPos.y = p.Parameters[1]
+	case 'm':
+		if len(p.Parameters) != 2 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command m", len(p.Parameters))
+		}
+		lastPos.x += p.Parameters[0]
+		lastPos.y += p.Parameters[1]
+	case 'H':
+		if len(p.Parameters) != 1 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command H", len(p.Parameters))
+		}
+		length = math.Abs(lastPos.x - p.Parameters[0])
+		lastPos.x = p.Parameters[0]
+	case 'h':
+		if len(p.Parameters) != 1 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command h", len(p.Parameters))
+		}
+		length = p.Parameters[0]
+		lastPos.x += p.Parameters[0]
+	case 'V':
+		if len(p.Parameters) != 1 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command V", len(p.Parameters))
+		}
+		length = math.Abs(lastPos.y - p.Parameters[0])
+		lastPos.y = p.Parameters[0]
+	case 'v':
+		if len(p.Parameters) != 1 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command v", len(p.Parameters))
+		}
+		length = p.Parameters[0]
+		lastPos.y += p.Parameters[0]
+	case 'L':
+		if len(p.Parameters) != 2 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command L", len(p.Parameters))
+		}
+		lx := lastPos.x - p.Parameters[0]
+		ly := lastPos.y - p.Parameters[1]
+		length = math.Sqrt(lx*lx + ly*ly)
+		lastPos.x = p.Parameters[0]
+		lastPos.y = p.Parameters[1]
+	case 'l':
+		if len(p.Parameters) != 2 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command l", len(p.Parameters))
+		}
+		length = math.Sqrt(p.Parameters[0]*p.Parameters[0] + p.Parameters[1]*p.Parameters[1])
+		lastPos.x += p.Parameters[0]
+		lastPos.y += p.Parameters[1]
 	default:
 		fmt.Printf("Unrecognized path command %c\n", p.Command)
 	}
-	return length
+	if p.Next != nil {
+		l, err := p.Next.length(lastPos)
+		if err != nil {
+			return 0, err
+		}
+		length += l
+	}
+	return length, nil
 }
 
 func newPath(str string) (*Path, error) {

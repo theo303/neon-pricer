@@ -9,12 +9,12 @@ import (
 )
 
 type Circle struct {
-	R    float64
-	X, Y float64
+	position
+	r float64
 }
 
-func (c Circle) Length() float64 {
-	return 2 * math.Pi * c.R
+func (c Circle) Length() (float64, error) {
+	return 2 * math.Pi * c.r, nil
 }
 
 func parseCircle(element svgparser.Element) (Circle, error) {
@@ -31,8 +31,10 @@ func parseCircle(element svgparser.Element) (Circle, error) {
 		return Circle{}, fmt.Errorf("parsing cy: %w", err)
 	}
 	return Circle{
-		R: r,
-		X: x,
-		Y: y,
+		r: r,
+		position: position{
+			x: x,
+			y: y,
+		},
 	}, nil
 }

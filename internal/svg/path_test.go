@@ -7,6 +7,69 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_Path_Length(t *testing.T) {
+	tests := map[string]struct {
+		path Path
+		want float64
+	}{
+		"1": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{10, 10},
+				Next: &Path{
+					Command:    'h',
+					Parameters: []float64{10},
+				},
+			},
+			want: 10,
+		},
+		"2": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{10, 10},
+				Next: &Path{
+					Command:    'm',
+					Parameters: []float64{10, 10},
+					Next: &Path{
+						Command:    'H',
+						Parameters: []float64{-20},
+					},
+				},
+			},
+			want: 40,
+		},
+		"3": {
+			path: Path{
+				Command:    'V',
+				Parameters: []float64{20},
+				Next: &Path{
+					Command:    'v',
+					Parameters: []float64{5},
+				},
+			},
+			want: 25,
+		},
+		"4": {
+			path: Path{
+				Command:    'L',
+				Parameters: []float64{3, -4},
+				Next: &Path{
+					Command:    'l',
+					Parameters: []float64{5, 12},
+				},
+			},
+			want: 18,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := tt.path.Length()
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func Test_parsePathCommand(t *testing.T) {
 	tests := map[string]struct {
 		pathString string

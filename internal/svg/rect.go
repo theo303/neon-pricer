@@ -8,12 +8,12 @@ import (
 )
 
 type Rectangle struct {
-	Height, Width float64
-	X, Y          float64
+	position
+	height, width float64
 }
 
-func (r Rectangle) Length() float64 {
-	return r.Height*2 + r.Width*2
+func (r Rectangle) Length() (float64, error) {
+	return r.height*2 + r.width*2, nil
 }
 
 func parseRectangle(element svgparser.Element) (Rectangle, error) {
@@ -34,9 +34,11 @@ func parseRectangle(element svgparser.Element) (Rectangle, error) {
 		return Rectangle{}, fmt.Errorf("parsing y: %w", err)
 	}
 	return Rectangle{
-		Height: height,
-		Width:  width,
-		X:      x,
-		Y:      y,
+		height: height,
+		width:  width,
+		position: position{
+			x: x,
+			y: y,
+		},
 	}, nil
 }

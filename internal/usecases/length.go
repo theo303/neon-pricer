@@ -16,11 +16,14 @@ func GetLength(filepath string, groupID string) (float64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("retrieving forms from svg file: %w", err)
 	}
-	fmt.Printf("%+v\n", forms)
 
 	var totalPerimeter float64
 	for _, form := range forms {
-		totalPerimeter += form.Length()
+		p, err := form.Length()
+		if err != nil {
+			return 0, err
+		}
+		totalPerimeter += p
 	}
 
 	return totalPerimeter, nil
