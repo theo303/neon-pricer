@@ -8,7 +8,7 @@ import (
 )
 
 type Rectangle struct {
-	position
+	point
 	height, width float64
 }
 
@@ -36,7 +36,7 @@ func parseRectangle(element svgparser.Element) (Rectangle, error) {
 	return Rectangle{
 		height: height,
 		width:  width,
-		position: position{
+		point: point{
 			x: x,
 			y: y,
 		},

@@ -60,12 +60,74 @@ func Test_Path_Length(t *testing.T) {
 			},
 			want: 18,
 		},
+		"5": {
+			path: Path{
+				Command:    'l',
+				Parameters: []float64{3, 4, 4, 3},
+			},
+			want: 10,
+		},
+		"6": {
+			path: Path{
+				Command:    'L',
+				Parameters: []float64{3, 4, 0, 8},
+			},
+			want: 10,
+		},
+		"7": {
+			path: Path{
+				Command:    'C',
+				Parameters: []float64{110, 150, 25, 190, 210, 250, 210, 30},
+			},
+			want: 272.87,
+		},
+		"8": {
+			path: Path{
+				Command:    'Q',
+				Parameters: []float64{220, 60, 20, 110, 70, 250},
+			},
+			want: 281.95,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			got, err := tt.path.Length()
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_splitBezier(t *testing.T) {
+	tests := map[string]struct {
+		ratio  float64
+		points []point
+		want   point
+	}{
+		"1": {
+			points: []point{
+				{x: 110, y: 150},
+				{x: 25, y: 190},
+				{x: 210, y: 250},
+				{x: 210, y: 30},
+			},
+			ratio: 0.5,
+			want:  point{x: 128.125, y: 187.5},
+		},
+		"2": {
+			points: []point{
+				{x: 110, y: 150},
+				{x: 25, y: 190},
+				{x: 210, y: 250},
+				{x: 210, y: 30},
+			},
+			ratio: 0.25,
+			want:  point{x: 128.125, y: 187.5},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.want, splitBezier(tt.ratio, tt.points)[0])
 		})
 	}
 }

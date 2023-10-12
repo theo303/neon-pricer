@@ -9,7 +9,7 @@ import (
 )
 
 type Circle struct {
-	position
+	point
 	r float64
 }
 
@@ -32,7 +32,7 @@ func parseCircle(element svgparser.Element) (Circle, error) {
 	}
 	return Circle{
 		r: r,
-		position: position{
+		point: point{
 			x: x,
 			y: y,
 		},

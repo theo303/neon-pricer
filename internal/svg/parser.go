@@ -16,7 +16,7 @@ const (
 	PathType      FormType = "path"
 )
 
-type position struct {
+type point struct {
 	x, y float64
 }
 
