@@ -76,15 +76,45 @@ func Test_Path_Length(t *testing.T) {
 		},
 		"7": {
 			path: Path{
-				Command:    'C',
-				Parameters: []float64{110, 150, 25, 190, 210, 250, 210, 30},
+				Command:    'M',
+				Parameters: []float64{110, 150},
+				Next: &Path{
+					Command:    'C',
+					Parameters: []float64{25, 190, 210, 250, 210, 30},
+				},
+			},
+			want: 272.87,
+		},
+		"7.5": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{110, 150},
+				Next: &Path{
+					Command:    'c',
+					Parameters: []float64{25, 190, 210, 250, 100, -120},
+				},
 			},
 			want: 272.87,
 		},
 		"8": {
 			path: Path{
-				Command:    'Q',
-				Parameters: []float64{220, 60, 20, 110, 70, 250},
+				Command:    'M',
+				Parameters: []float64{220, 60},
+				Next: &Path{
+					Command:    'Q',
+					Parameters: []float64{20, 110, 70, 250},
+				},
+			},
+			want: 281.95,
+		},
+		"8.5": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{220, 60},
+				Next: &Path{
+					Command:    'q',
+					Parameters: []float64{20, 110, -150, 190},
+				},
 			},
 			want: 281.95,
 		},
@@ -122,7 +152,7 @@ func Test_splitBezier(t *testing.T) {
 				{x: 210, y: 30},
 			},
 			ratio: 0.25,
-			want:  point{x: 128.125, y: 187.5},
+			want:  point{x: 89.765625, y: 179.0625},
 		},
 	}
 	for name, tt := range tests {

@@ -87,28 +87,59 @@ func (p Path) length(lastPos point) (float64, error) {
 			lastPos.y += p.Parameters[i+1]
 		}
 	case 'C':
-		if len(p.Parameters) != 8 {
+		if len(p.Parameters)%6 != 0 {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command C", len(p.Parameters))
 		}
-		points := []point{
-			{x: p.Parameters[0], y: p.Parameters[1]},
-			{x: p.Parameters[2], y: p.Parameters[3]},
-			{x: p.Parameters[4], y: p.Parameters[5]},
-			{x: p.Parameters[6], y: p.Parameters[7]},
+		for i := 0; i < len(p.Parameters); i += 6 {
+			points := []point{
+				lastPos,
+				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+				{x: p.Parameters[i+4], y: p.Parameters[i+5]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[3]
 		}
-		length = lengthBezier(points)
-		lastPos = points[3]
+	case 'c':
+		if len(p.Parameters)%6 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command c", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 6 {
+			points := []point{
+				lastPos,
+				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+				{x: lastPos.x + p.Parameters[i+4], y: lastPos.y + p.Parameters[i+5]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[3]
+		}
 	case 'Q':
-		if len(p.Parameters) != 6 {
+		if len(p.Parameters)%4 != 0 {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command Q", len(p.Parameters))
 		}
-		points := []point{
-			{x: p.Parameters[0], y: p.Parameters[1]},
-			{x: p.Parameters[2], y: p.Parameters[3]},
-			{x: p.Parameters[4], y: p.Parameters[5]},
+		for i := 0; i < len(p.Parameters); i += 4 {
+			points := []point{
+				lastPos,
+				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[2]
 		}
-		length = lengthBezier(points)
-		lastPos = points[2]
+	case 'q':
+		if len(p.Parameters)%4 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command q", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 4 {
+			points := []point{
+				lastPos,
+				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[2]
+		}
 	default:
 		fmt.Printf("Unrecognized path command %c\n", p.Command)
 	}
