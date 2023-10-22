@@ -8,6 +8,8 @@ import (
 type arc struct {
 	// center of the ellipse.
 	center point
+	// start and end points.
+	start, end point
 	// rx and ry are the radii of the ellipse.
 	rx, ry float64
 	// phi is the angle from the x-axis of the coordonate system to the x-axis of the ellipse.
@@ -31,7 +33,7 @@ func angle(ux, uy, vx, vy float64) float64 {
 
 // https://stackoverflow.com/questions/9017100/calculate-center-of-svg-arc
 // https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
-func arcToCenterParam(start, end point, rx, ry, rot float64, fA, fS bool) (arc, error) {
+func arcFromSVGParams(start, end point, rx, ry, rot float64, fA, fS bool) (arc, error) {
 	if rx == 0 || ry == 0 {
 		return arc{}, errors.New("rx or ry cannot be equal to 0")
 	}
@@ -76,6 +78,8 @@ func arcToCenterParam(start, end point, rx, ry, rot float64, fA, fS bool) (arc, 
 
 	return arc{
 		center:     center,
+		start:      start,
+		end:        end,
 		rx:         rx,
 		ry:         ry,
 		phi:        phi,
@@ -94,4 +98,19 @@ func (a arc) point(t float64) point {
 		x: cosPhi*rxCosT - sinPhi*rySinT + a.center.x,
 		y: sinPhi*rxCosT + cosPhi*rySinT + a.center.y,
 	}
+}
+
+func (a arc) length(step float64) float64 {
+	deltaAngle := math.Abs(math.Mod(a.endAngle-a.startAngle, math.Pi*2))
+	if !a.clockwise {
+		deltaAngle = math.Pi*2 - deltaAngle
+	}
+	points := []point{a.start}
+	for t := step; t < deltaAngle; t += step {
+		points = append(points, a.point(a.startAngle+t))
+	}
+
+	length := lengthLines(points)
+
+	return length
 }

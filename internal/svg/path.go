@@ -14,7 +14,8 @@ var pathRegex = regexp.MustCompile(`[a-zA-Z][\d\-.,]*`)
 
 var paramRegex = regexp.MustCompile(`-?[\d]*\.?[\d]+`)
 
-const acceptanceLimit = 0.01
+const bezierPrecision = 0.01
+const ellipticArcAngleStep = math.Pi / 100000
 
 type Path struct {
 	Command    rune
@@ -23,10 +24,10 @@ type Path struct {
 }
 
 func (p Path) Length() (float64, error) {
-	return p.length(point{})
+	return p.length(point{}, point{})
 }
 
-func (p Path) length(lastPos point) (float64, error) {
+func (p Path) length(firstPos, lastPos point) (float64, error) {
 	var length float64
 
 	switch p.Command {
@@ -36,12 +37,14 @@ func (p Path) length(lastPos point) (float64, error) {
 		}
 		lastPos.x = p.Parameters[0]
 		lastPos.y = p.Parameters[1]
+		firstPos = lastPos
 	case 'm':
 		if len(p.Parameters) != 2 {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command m", len(p.Parameters))
 		}
 		lastPos.x += p.Parameters[0]
 		lastPos.y += p.Parameters[1]
+		firstPos = lastPos
 	case 'H':
 		if len(p.Parameters) != 1 {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command H", len(p.Parameters))
@@ -140,11 +143,53 @@ func (p Path) length(lastPos point) (float64, error) {
 			length += lengthBezier(points)
 			lastPos = points[2]
 		}
+	case 'A':
+		if len(p.Parameters)%7 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command A", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 7 {
+			end := point{p.Parameters[5], p.Parameters[6]}
+			arc, err := arcFromSVGParams(
+				lastPos,
+				end,
+				p.Parameters[0], p.Parameters[1],
+				p.Parameters[2],
+				p.Parameters[3] == 1,
+				p.Parameters[4] == 1,
+			)
+			if err != nil {
+				return 0, fmt.Errorf("building arc: %w", err)
+			}
+			length += arc.length(ellipticArcAngleStep)
+			lastPos = end
+		}
+	case 'a':
+		if len(p.Parameters)%7 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command a", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 7 {
+			end := point{lastPos.x + p.Parameters[5], lastPos.y + p.Parameters[6]}
+			arc, err := arcFromSVGParams(
+				lastPos,
+				end,
+				p.Parameters[0], p.Parameters[1],
+				p.Parameters[2],
+				p.Parameters[3] == 1,
+				p.Parameters[4] == 1,
+			)
+			if err != nil {
+				return 0, fmt.Errorf("building arc: %w", err)
+			}
+			length += arc.length(ellipticArcAngleStep)
+			lastPos = end
+		}
+	case 'Z', 'z':
+		length += lengthLines([]point{lastPos, firstPos})
 	default:
 		fmt.Printf("Unrecognized path command %c\n", p.Command)
 	}
 	if p.Next != nil {
-		l, err := p.Next.length(lastPos)
+		l, err := p.Next.length(firstPos, lastPos)
 		if err != nil {
 			return 0, err
 		}
@@ -157,15 +202,22 @@ func lengthLine(lx, ly float64) float64 {
 	return math.Sqrt(lx*lx + ly*ly)
 }
 
+func lengthLines(points []point) float64 {
+	var length float64
+	for i := 0; i < len(points)-1; i++ {
+		length += lengthLine(points[i+1].x-points[i].x, points[i+1].y-points[i].y)
+	}
+	return length
+}
+
 func lengthBezier(points []point) float64 {
 	var length float64
 	lastLength := -1.0
 	step := 0.5
 	segments := []point{points[0], points[len(points)-1]}
 	var newSegments []point
-	for math.Abs(lastLength-length) > acceptanceLimit {
+	for math.Abs(lastLength-length) > bezierPrecision {
 		lastLength = length
-		length = 0
 		newSegments = make([]point, (len(segments)-1)*2+1)
 		for i := range newSegments {
 			if i%2 == 0 {
@@ -175,9 +227,7 @@ func lengthBezier(points []point) float64 {
 			}
 		}
 		step /= 2.0
-		for i := 0; i < len(newSegments)-1; i++ {
-			length += lengthLine(newSegments[i+1].x-newSegments[i].x, newSegments[i+1].y-newSegments[i].y)
-		}
+		length = lengthLines(newSegments)
 		segments = append([]point{}, newSegments...)
 	}
 

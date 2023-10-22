@@ -7,6 +7,8 @@ import (
 	"github.com/JoshVarga/svgparser"
 )
 
+const decoupe = "DECOUPE"
+
 // FormType is an enum to define types of forms.
 type FormType string
 
@@ -36,7 +38,9 @@ func RetrieveForms(source io.Reader, groupID string) ([]Measurable, error) {
 }
 
 func findForms(element *svgparser.Element, groupID string) ([]Measurable, error) {
-	if element == nil || (groupID != "" && element.Name == "g" && element.Attributes["id"] != groupID) {
+	if element == nil ||
+		(groupID != "" && element.Name == "g" && element.Attributes["id"] != groupID) ||
+		(element.Name == "g" && element.Attributes["id"] == decoupe) {
 		return nil, nil
 	}
 

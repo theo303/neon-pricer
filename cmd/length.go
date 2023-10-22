@@ -16,7 +16,7 @@ var lengthCmd = &cobra.Command{
 	Short: "Calculate the total length of all forms in a svg file.",
 	Long: `Calculate the total length of all forms in a svg file.
 	
-	For now, only rectangles and circles are supported`,
+	Rectangles, circles and paths are supported.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(args)
 		groupID, err := cmd.Flags().GetString("group")
