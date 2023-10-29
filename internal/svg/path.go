@@ -24,10 +24,10 @@ type Path struct {
 }
 
 func (p Path) Length() (float64, error) {
-	return p.length(point{}, point{})
+	return p.length(point{}, point{}, point{})
 }
 
-func (p Path) length(firstPos, lastPos point) (float64, error) {
+func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 	var length float64
 
 	switch p.Command {
@@ -117,6 +117,34 @@ func (p Path) length(firstPos, lastPos point) (float64, error) {
 			length += lengthBezier(points)
 			lastPos = points[3]
 		}
+	case 'S':
+		if len(p.Parameters)%4 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command S", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 4 {
+			points := []point{
+				lastPos,
+				reflectPoint(lastCtrl, lastPos),
+				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[3]
+		}
+	case 's':
+		if len(p.Parameters)%4 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command s", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 4 {
+			points := []point{
+				lastPos,
+				reflectPoint(lastCtrl, lastPos),
+				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[3]
+		}
 	case 'Q':
 		if len(p.Parameters)%4 != 0 {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command Q", len(p.Parameters))
@@ -139,6 +167,32 @@ func (p Path) length(firstPos, lastPos point) (float64, error) {
 				lastPos,
 				{x: p.Parameters[i], y: p.Parameters[i+1]},
 				{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[2]
+		}
+	case 'T':
+		if len(p.Parameters)%2 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command T", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 2 {
+			points := []point{
+				lastPos,
+				reflectPoint(lastCtrl, lastPos),
+				{x: p.Parameters[i], y: p.Parameters[i+1]},
+			}
+			length += lengthBezier(points)
+			lastPos = points[2]
+		}
+	case 't':
+		if len(p.Parameters)%2 != 0 {
+			return 0, fmt.Errorf("invalid number of parameters (%d) for command t", len(p.Parameters))
+		}
+		for i := 0; i < len(p.Parameters); i += 2 {
+			points := []point{
+				lastPos,
+				reflectPoint(lastCtrl, lastPos),
+				{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
 			}
 			length += lengthBezier(points)
 			lastPos = points[2]
@@ -189,7 +243,7 @@ func (p Path) length(firstPos, lastPos point) (float64, error) {
 		fmt.Printf("Unrecognized path command %c\n", p.Command)
 	}
 	if p.Next != nil {
-		l, err := p.Next.length(firstPos, lastPos)
+		l, err := p.Next.length(firstPos, lastPos, lastCtrl)
 		if err != nil {
 			return 0, err
 		}
@@ -210,42 +264,12 @@ func lengthLines(points []point) float64 {
 	return length
 }
 
-func lengthBezier(points []point) float64 {
-	var length float64
-	lastLength := -1.0
-	step := 0.5
-	segments := []point{points[0], points[len(points)-1]}
-	var newSegments []point
-	for math.Abs(lastLength-length) > bezierPrecision {
-		lastLength = length
-		newSegments = make([]point, (len(segments)-1)*2+1)
-		for i := range newSegments {
-			if i%2 == 0 {
-				newSegments[i] = segments[i/2]
-			} else {
-				newSegments[i] = splitBezier(step*float64(i), points)[0]
-			}
-		}
-		step /= 2.0
-		length = lengthLines(newSegments)
-		segments = append([]point{}, newSegments...)
+// reflectPoint returns the reflection of p about m.
+func reflectPoint(p, m point) point {
+	return point{
+		x: m.x*2 - p.x,
+		y: m.y*2 - p.y,
 	}
-
-	return math.Round(length*100) / 100
-}
-
-func splitBezier(t float64, points []point) []point {
-	if len(points) == 1 {
-		return points
-	}
-	newpoints := make([]point, len(points)-1)
-	for i := 0; i < len(newpoints); i++ {
-		newpoints[i] = point{
-			x: (1-t)*points[i].x + t*points[i+1].x,
-			y: (1-t)*points[i].y + t*points[i+1].y,
-		}
-	}
-	return splitBezier(t, newpoints)
 }
 
 func newPath(str string) (*Path, error) {
