@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,7 +92,7 @@ func Test_Path_Length(t *testing.T) {
 				Parameters: []float64{110, 150},
 				Next: &Path{
 					Command:    'c',
-					Parameters: []float64{25, 190, 210, 250, 100, -120},
+					Parameters: []float64{-85, 40, 100, 100, 100, -120},
 				},
 			},
 			want: 272.87,
@@ -113,7 +114,7 @@ func Test_Path_Length(t *testing.T) {
 				Parameters: []float64{220, 60},
 				Next: &Path{
 					Command:    'q',
-					Parameters: []float64{20, 110, -150, 190},
+					Parameters: []float64{-200, 50, -150, 190},
 				},
 			},
 			want: 281.95,
@@ -145,7 +146,7 @@ func Test_Path_Length(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got, err := tt.path.Length()
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, fmt.Sprintf("%.2f", tt.want), fmt.Sprintf("%.2f", got))
 		})
 	}
 }

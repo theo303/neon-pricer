@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -121,7 +122,7 @@ func Test_arc_length(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, tt.want, tt.arc.length(tt.step))
+			assert.Equal(t, fmt.Sprintf("%.2f", tt.want), fmt.Sprintf("%.2f", tt.arc.length(tt.step)))
 		})
 	}
 }

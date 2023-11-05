@@ -110,8 +110,8 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 		for i := 0; i < len(p.Parameters); i += 6 {
 			points := []point{
 				lastPos,
-				{x: p.Parameters[i], y: p.Parameters[i+1]},
-				{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+				{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
+				{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
 				{x: lastPos.x + p.Parameters[i+4], y: lastPos.y + p.Parameters[i+5]},
 			}
 			length += lengthBezier(points)
@@ -139,7 +139,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			points := []point{
 				lastPos,
 				reflectPoint(lastCtrl, lastPos),
-				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
 				{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
 			}
 			length += lengthBezier(points)
@@ -165,7 +165,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 		for i := 0; i < len(p.Parameters); i += 4 {
 			points := []point{
 				lastPos,
-				{x: p.Parameters[i], y: p.Parameters[i+1]},
+				{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
 				{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
 			}
 			length += lengthBezier(points)
