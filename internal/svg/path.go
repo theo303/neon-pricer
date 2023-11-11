@@ -55,7 +55,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 		if len(p.Parameters) != 1 {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command h", len(p.Parameters))
 		}
-		length = p.Parameters[0]
+		length = math.Abs(p.Parameters[0])
 		lastPos.x += p.Parameters[0]
 	case 'V':
 		if len(p.Parameters) != 1 {
@@ -67,7 +67,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 		if len(p.Parameters) != 1 {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command v", len(p.Parameters))
 		}
-		length = p.Parameters[0]
+		length = math.Abs(p.Parameters[0])
 		lastPos.y += p.Parameters[0]
 	case 'L':
 		if len(p.Parameters)%2 != 0 {
@@ -202,14 +202,14 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command A", len(p.Parameters))
 		}
 		for i := 0; i < len(p.Parameters); i += 7 {
-			end := point{p.Parameters[5], p.Parameters[6]}
+			end := point{p.Parameters[i+5], p.Parameters[i+6]}
 			arc, err := arcFromSVGParams(
 				lastPos,
 				end,
-				p.Parameters[0], p.Parameters[1],
-				p.Parameters[2],
-				p.Parameters[3] == 1,
-				p.Parameters[4] == 1,
+				p.Parameters[i], p.Parameters[i+1],
+				p.Parameters[i+2],
+				p.Parameters[i+3] == 1,
+				p.Parameters[i+4] == 1,
 			)
 			if err != nil {
 				return 0, fmt.Errorf("building arc: %w", err)
@@ -222,14 +222,14 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			return 0, fmt.Errorf("invalid number of parameters (%d) for command a", len(p.Parameters))
 		}
 		for i := 0; i < len(p.Parameters); i += 7 {
-			end := point{lastPos.x + p.Parameters[5], lastPos.y + p.Parameters[6]}
+			end := point{lastPos.x + p.Parameters[i+5], lastPos.y + p.Parameters[i+6]}
 			arc, err := arcFromSVGParams(
 				lastPos,
 				end,
-				p.Parameters[0], p.Parameters[1],
-				p.Parameters[2],
-				p.Parameters[3] == 1,
-				p.Parameters[4] == 1,
+				p.Parameters[i], p.Parameters[i+1],
+				p.Parameters[i+2],
+				p.Parameters[i+3] == 1,
+				p.Parameters[i+4] == 1,
 			)
 			if err != nil {
 				return 0, fmt.Errorf("building arc: %w", err)

@@ -141,6 +141,16 @@ func Test_Path_Length(t *testing.T) {
 			},
 			want: 47.123889801739026,
 		},
+		"10": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{448.45, 479.99},
+				Next: &Path{
+					Command:    'A',
+					Parameters: []float64{294.1, 294.1, 0, 0, 1, 627.86, 373.45},
+				},
+			},
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
