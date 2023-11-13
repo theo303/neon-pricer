@@ -150,6 +150,7 @@ func Test_Path_Length(t *testing.T) {
 					Parameters: []float64{294.1, 294.1, 0, 0, 1, 627.86, 373.45},
 				},
 			},
+			want: 213.30,
 		},
 	}
 	for name, tt := range tests {

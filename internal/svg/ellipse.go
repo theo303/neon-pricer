@@ -70,11 +70,28 @@ func arcFromSVGParams(start, end point, rx, ry, rot float64, fA, fS bool) (arc, 
 
 	xcr1 := (x1 - cx) / rx
 	ycr1 := (y1 - cy) / ry
-	startAngle := angle(1, 0, xcr1, ycr1)
+	startAngle := math.Mod(angle(1, 0, xcr1, ycr1), math.Pi*2)
 
-	xcr2 := (-x1 - cx) / rx
-	ycr2 := (-y1 - cy) / rx
-	endAngle := math.Abs(math.Mod(startAngle+angle(xcr1, ycr1, xcr2, ycr2), math.Pi*2))
+	xcr2 := (x1 + cx) / rx
+	ycr2 := (y1 + cy) / ry
+	deltaAngle := angle(xcr1, ycr1, -xcr2, -ycr2)
+	for deltaAngle > math.Pi*2 {
+		deltaAngle -= math.Pi * 2
+	}
+	for deltaAngle < 0 {
+		deltaAngle += math.Pi * 2
+	}
+	if !fS {
+		deltaAngle -= math.Pi * 2
+	}
+
+	endAngle := startAngle + deltaAngle
+	for endAngle > math.Pi*2 {
+		endAngle -= math.Pi * 2
+	}
+	for endAngle < 0 {
+		endAngle += math.Pi * 2
+	}
 
 	return arc{
 		center:     center,
