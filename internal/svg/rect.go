@@ -16,6 +16,13 @@ func (r Rectangle) Length() (float64, error) {
 	return r.height*2 + r.width*2, nil
 }
 
+func (r Rectangle) Size() (Size, error) {
+	return Size{
+		height: r.height,
+		width:  r.width,
+	}, nil
+}
+
 func parseRectangle(element svgparser.Element) (Rectangle, error) {
 	height, err := strconv.ParseFloat(element.Attributes["height"], 64)
 	if err != nil {

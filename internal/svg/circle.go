@@ -17,6 +17,13 @@ func (c Circle) Length() (float64, error) {
 	return 2 * math.Pi * c.r, nil
 }
 
+func (c Circle) Size() (Size, error) {
+	return Size{
+		width:  c.r,
+		height: c.r,
+	}, nil
+}
+
 func parseCircle(element svgparser.Element) (Circle, error) {
 	r, err := strconv.ParseFloat(element.Attributes["r"], 64)
 	if err != nil {

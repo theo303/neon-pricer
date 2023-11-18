@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/JoshVarga/svgparser"
 )
@@ -17,10 +18,35 @@ var paramRegex = regexp.MustCompile(`-?[\d]*\.?[\d]+`)
 const bezierPrecision = 0.01
 const ellipticArcAngleStep = math.Pi / 100000
 
+var nbOfParams = map[rune]int{
+	'M': 2,
+	'H': 1,
+	'V': 1,
+	'L': 2,
+	'C': 6,
+	'Q': 4,
+	'S': 4,
+	'T': 2,
+	'A': 7,
+	'Z': 0,
+}
+
 type Path struct {
 	Command    rune
 	Parameters []float64
 	Next       *Path
+}
+
+func (p Path) checkNumberOfParams() bool {
+	c := unicode.ToUpper(p.Command)
+	n, ok := nbOfParams[c]
+	if !ok {
+		return false
+	}
+	if c == 'M' || c == 'V' || c == 'H' || c == 'Z' {
+		return n == len(p.Parameters)
+	}
+	return len(p.Parameters)%n == 0
 }
 
 func (p Path) Length() (float64, error) {
@@ -30,49 +56,31 @@ func (p Path) Length() (float64, error) {
 func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 	var length float64
 
+	if !p.checkNumberOfParams() {
+		return 0, fmt.Errorf("invalid number of parameters (%d) for command %c", len(p.Parameters), p.Command)
+	}
 	switch p.Command {
 	case 'M':
-		if len(p.Parameters) != 2 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command M", len(p.Parameters))
-		}
 		lastPos.x = p.Parameters[0]
 		lastPos.y = p.Parameters[1]
 		firstPos = lastPos
 	case 'm':
-		if len(p.Parameters) != 2 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command m", len(p.Parameters))
-		}
 		lastPos.x += p.Parameters[0]
 		lastPos.y += p.Parameters[1]
 		firstPos = lastPos
 	case 'H':
-		if len(p.Parameters) != 1 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command H", len(p.Parameters))
-		}
 		length = math.Abs(lastPos.x - p.Parameters[0])
 		lastPos.x = p.Parameters[0]
 	case 'h':
-		if len(p.Parameters) != 1 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command h", len(p.Parameters))
-		}
 		length = math.Abs(p.Parameters[0])
 		lastPos.x += p.Parameters[0]
 	case 'V':
-		if len(p.Parameters) != 1 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command V", len(p.Parameters))
-		}
 		length = math.Abs(lastPos.y - p.Parameters[0])
 		lastPos.y = p.Parameters[0]
 	case 'v':
-		if len(p.Parameters) != 1 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command v", len(p.Parameters))
-		}
 		length = math.Abs(p.Parameters[0])
 		lastPos.y += p.Parameters[0]
 	case 'L':
-		if len(p.Parameters)%2 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command L", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 2 {
 			lx := lastPos.x - p.Parameters[i]
 			ly := lastPos.y - p.Parameters[i+1]
@@ -81,18 +89,12 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos.y = p.Parameters[i+1]
 		}
 	case 'l':
-		if len(p.Parameters)%2 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command l", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 2 {
 			length += lengthLine(p.Parameters[i], p.Parameters[i+1])
 			lastPos.x += p.Parameters[i]
 			lastPos.y += p.Parameters[i+1]
 		}
 	case 'C':
-		if len(p.Parameters)%6 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command C", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 6 {
 			points := []point{
 				lastPos,
@@ -104,9 +106,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[3]
 		}
 	case 'c':
-		if len(p.Parameters)%6 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command c", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 6 {
 			points := []point{
 				lastPos,
@@ -118,9 +117,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[3]
 		}
 	case 'S':
-		if len(p.Parameters)%4 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command S", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 4 {
 			points := []point{
 				lastPos,
@@ -132,9 +128,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[3]
 		}
 	case 's':
-		if len(p.Parameters)%4 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command s", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 4 {
 			points := []point{
 				lastPos,
@@ -146,9 +139,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[3]
 		}
 	case 'Q':
-		if len(p.Parameters)%4 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command Q", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 4 {
 			points := []point{
 				lastPos,
@@ -159,9 +149,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[2]
 		}
 	case 'q':
-		if len(p.Parameters)%4 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command q", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 4 {
 			points := []point{
 				lastPos,
@@ -172,9 +159,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[2]
 		}
 	case 'T':
-		if len(p.Parameters)%2 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command T", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 2 {
 			points := []point{
 				lastPos,
@@ -185,9 +169,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[2]
 		}
 	case 't':
-		if len(p.Parameters)%2 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command t", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 2 {
 			points := []point{
 				lastPos,
@@ -198,9 +179,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = points[2]
 		}
 	case 'A':
-		if len(p.Parameters)%7 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command A", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 7 {
 			end := point{p.Parameters[i+5], p.Parameters[i+6]}
 			arc, err := arcFromSVGParams(
@@ -218,9 +196,6 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			lastPos = end
 		}
 	case 'a':
-		if len(p.Parameters)%7 != 0 {
-			return 0, fmt.Errorf("invalid number of parameters (%d) for command a", len(p.Parameters))
-		}
 		for i := 0; i < len(p.Parameters); i += 7 {
 			end := point{lastPos.x + p.Parameters[i+5], lastPos.y + p.Parameters[i+6]}
 			arc, err := arcFromSVGParams(
@@ -250,6 +225,76 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 		length += l
 	}
 	return length, nil
+}
+
+func (p Path) Size() (Size, error) {
+	b, err := p.bounds(point{})
+	if err != nil {
+		return Size{}, err
+	}
+	return Size{
+		height: b.maxY - b.minY,
+		width:  b.maxX - b.minX,
+	}, nil
+}
+
+func (p Path) bounds(lastPos point) (bounds, error) {
+	var b bounds
+
+	if !p.checkNumberOfParams() {
+		return bounds{}, fmt.Errorf("invalid number of parameters (%d) for command %c", len(p.Parameters), p.Command)
+	}
+	switch p.Command {
+	case 'M':
+		b.minX = p.Parameters[0]
+		b.maxX = p.Parameters[0]
+		b.minY = p.Parameters[1]
+		b.maxY = p.Parameters[1]
+		lastPos.x = p.Parameters[0]
+		lastPos.y = p.Parameters[1]
+	case 'm':
+		b.minX += p.Parameters[0]
+		b.maxX += p.Parameters[0]
+		b.minY += p.Parameters[1]
+		b.maxY += p.Parameters[1]
+		lastPos.x += p.Parameters[0]
+		lastPos.y += p.Parameters[1]
+	case 'V':
+		// b.minX = lastPos.x
+		// b.maxX = lastPos.x
+
+	default:
+		fmt.Printf("Unrecognized path command %c\n", p.Command)
+	}
+	if p.Next != nil {
+		nb, err := p.Next.bounds(lastPos)
+		if err != nil {
+			return bounds{}, err
+		}
+		b = b.biggest(nb)
+	}
+	return b, nil
+}
+
+type bounds struct {
+	minX, minY float64
+	maxX, maxY float64
+}
+
+func (b bounds) biggest(nb bounds) bounds {
+	if nb.minX < b.minX {
+		b.minX = nb.minX
+	}
+	if nb.minY < b.minY {
+		b.minY = nb.minY
+	}
+	if nb.maxX > b.maxX {
+		b.maxX = nb.maxX
+	}
+	if nb.maxY > b.maxY {
+		b.maxY = nb.maxY
+	}
+	return b
 }
 
 func lengthLine(lx, ly float64) float64 {
