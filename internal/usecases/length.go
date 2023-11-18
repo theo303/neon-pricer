@@ -6,25 +6,27 @@ import (
 	"theo303/neon-pricer/internal/svg"
 )
 
-func GetLength(filepath string, groupID string) (float64, error) {
+func GetLengths(filepath string, groupID string) (map[string]float64, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
-		return 0, fmt.Errorf("opening file: %w", err)
+		return nil, fmt.Errorf("opening file: %w", err)
 	}
 
-	forms, err := svg.RetrieveForms(file, groupID)
+	formsGroups, err := svg.RetrieveForms(file, groupID)
 	if err != nil {
-		return 0, fmt.Errorf("retrieving forms from svg file: %w", err)
+		return nil, fmt.Errorf("retrieving forms from svg file: %w", err)
 	}
 
-	var totalPerimeter float64
-	for _, form := range forms {
-		p, err := form.Length()
-		if err != nil {
-			return 0, err
+	lengths := make(map[string]float64)
+	for id, forms := range formsGroups {
+		for _, form := range forms {
+			l, err := form.Length()
+			if err != nil {
+				return nil, err
+			}
+			lengths[id] += l
 		}
-		totalPerimeter += p
 	}
 
-	return totalPerimeter, nil
+	return lengths, nil
 }

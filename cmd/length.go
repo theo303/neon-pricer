@@ -15,19 +15,25 @@ var lengthCmd = &cobra.Command{
 	Use:   "length",
 	Short: "Calculate the total length of all forms in a svg file.",
 	Long: `Calculate the total length of all forms in a svg file.
+Each groups of forms will be measured independantly and then summed together.
 	
-	Rectangles, circles and paths are supported.`,
+Rectangles, circles and paths are supported.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(args)
 		groupID, err := cmd.Flags().GetString("group")
 		if err != nil {
 			panic(err)
 		}
-		length, err := usecases.GetLength(args[0], groupID)
+		lengths, err := usecases.GetLengths(args[0], groupID)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(length)
+		var totalLength float64
+		for id, length := range lengths {
+			fmt.Printf("%s: %.2f\n", id, length)
+			totalLength += length
+		}
+		fmt.Printf("total: %.2f\n", totalLength)
 	},
 }
 

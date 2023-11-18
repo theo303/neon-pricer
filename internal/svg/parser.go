@@ -28,19 +28,17 @@ type Measurable interface {
 }
 
 // RetrieveForms retrieves a list of Forms from the svg source.
-func RetrieveForms(source io.Reader, groupID string) ([]Measurable, error) {
+func RetrieveForms(source io.Reader, groupID string) (map[string][]Measurable, error) {
 	svg, err := svgparser.Parse(source, true)
 	if err != nil {
 		return nil, fmt.Errorf("parsing svg file: %w", err)
 	}
 
-	return findForms(svg, groupID)
+	return parseGroups(svg, groupID)
 }
 
-func findForms(element *svgparser.Element, groupID string) ([]Measurable, error) {
-	if element == nil ||
-		(groupID != "" && element.Name == "g" && element.Attributes["id"] != groupID) ||
-		(element.Name == "g" && element.Attributes["id"] == decoupe) {
+func parseForms(element *svgparser.Element) ([]Measurable, error) {
+	if element == nil {
 		return nil, nil
 	}
 
@@ -67,11 +65,37 @@ func findForms(element *svgparser.Element, groupID string) ([]Measurable, error)
 	}
 
 	for i, child := range element.Children {
-		childForms, err := findForms(child, groupID)
+		childForms, err := parseForms(child)
 		if err != nil {
 			return nil, fmt.Errorf("searching forms in child %d: %w", i, err)
 		}
 		forms = append(forms, childForms...)
 	}
+
 	return forms, nil
+}
+
+func parseGroups(element *svgparser.Element, groupID string) (map[string][]Measurable, error) {
+	if element == nil ||
+		(groupID != "" && element.Name == "g" && element.Attributes["id"] != groupID) ||
+		(element.Name == "g" && element.Attributes["id"] == decoupe) {
+		return nil, nil
+	}
+
+	var err error
+	formsGroups := make(map[string][]Measurable)
+	for _, child := range element.Children {
+		if child.Name != "g" {
+			continue
+		}
+		if groupID != "" && child.Attributes["id"] != groupID {
+			continue
+		}
+		formsGroups[child.Attributes["id"]], err = parseForms(child)
+		if err != nil {
+			return nil, fmt.Errorf("parsing group of forms %s: %w", child.Attributes["id"], err)
+		}
+	}
+
+	return formsGroups, nil
 }
