@@ -22,13 +22,13 @@ type point struct {
 	x, y float64
 }
 
-// Measurable defines a svg object for which a length can be calculated.
-type Measurable interface {
+// Form defines a svg object that can be measured, sized.
+type Form interface {
 	Length() (float64, error)
 }
 
 // RetrieveForms retrieves a list of Forms from the svg source.
-func RetrieveForms(source io.Reader, groupID string) (map[string][]Measurable, error) {
+func RetrieveForms(source io.Reader, groupID string) (map[string][]Form, error) {
 	svg, err := svgparser.Parse(source, true)
 	if err != nil {
 		return nil, fmt.Errorf("parsing svg file: %w", err)
@@ -37,12 +37,12 @@ func RetrieveForms(source io.Reader, groupID string) (map[string][]Measurable, e
 	return parseGroups(svg, groupID)
 }
 
-func parseForms(element *svgparser.Element) ([]Measurable, error) {
+func parseForms(element *svgparser.Element) ([]Form, error) {
 	if element == nil {
 		return nil, nil
 	}
 
-	var forms []Measurable
+	var forms []Form
 	switch element.Name {
 	case string(RectangleType):
 		rect, err := parseRectangle(*element)
@@ -75,7 +75,7 @@ func parseForms(element *svgparser.Element) ([]Measurable, error) {
 	return forms, nil
 }
 
-func parseGroups(element *svgparser.Element, groupID string) (map[string][]Measurable, error) {
+func parseGroups(element *svgparser.Element, groupID string) (map[string][]Form, error) {
 	if element == nil ||
 		(groupID != "" && element.Name == "g" && element.Attributes["id"] != groupID) ||
 		(element.Name == "g" && element.Attributes["id"] == decoupe) {
@@ -83,7 +83,7 @@ func parseGroups(element *svgparser.Element, groupID string) (map[string][]Measu
 	}
 
 	var err error
-	formsGroups := make(map[string][]Measurable)
+	formsGroups := make(map[string][]Form)
 	for _, child := range element.Children {
 		if child.Name != "g" {
 			continue

@@ -24,7 +24,12 @@ Rectangles, circles and paths are supported.`,
 		if err != nil {
 			panic(err)
 		}
-		lengths, err := usecases.GetLengths(args[0], groupID)
+
+		formsGroups, err := usecases.ParseSVGFile(args[0], groupID)
+		if err != nil {
+			panic(err)
+		}
+		lengths, err := usecases.GetLengths(formsGroups)
 		if err != nil {
 			panic(err)
 		}

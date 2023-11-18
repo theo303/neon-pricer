@@ -6,7 +6,8 @@ import (
 	"theo303/neon-pricer/internal/svg"
 )
 
-func GetLengths(filepath string, groupID string) (map[string]float64, error) {
+// ParseSVGFile parses an svg file and returns a map containing forms found in each groups.
+func ParseSVGFile(filepath string, groupID string) (map[string][]svg.Form, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
@@ -17,6 +18,10 @@ func GetLengths(filepath string, groupID string) (map[string]float64, error) {
 		return nil, fmt.Errorf("retrieving forms from svg file: %w", err)
 	}
 
+	return formsGroups, nil
+}
+
+func GetLengths(formsGroups map[string][]svg.Form) (map[string]float64, error) {
 	lengths := make(map[string]float64)
 	for id, forms := range formsGroups {
 		for _, form := range forms {
@@ -29,4 +34,8 @@ func GetLengths(filepath string, groupID string) (map[string]float64, error) {
 	}
 
 	return lengths, nil
+}
+
+func GetSizes(formsGroups map[string][]svg.Form) (map[string]float64, error) {
+	return nil, nil
 }
