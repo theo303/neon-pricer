@@ -32,7 +32,6 @@ func GetLengths(formsGroups map[string][]svg.Form) (map[string]float64, error) {
 			lengths[id] += l
 		}
 	}
-
 	return lengths, nil
 }
 

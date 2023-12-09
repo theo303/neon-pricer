@@ -16,6 +16,7 @@ const (
 	RectangleType FormType = "rect"
 	CircleType    FormType = "circle"
 	PathType      FormType = "path"
+	LineType      FormType = "line"
 )
 
 type point struct {
@@ -29,7 +30,7 @@ type Form interface {
 }
 
 type Size struct {
-	height, width float64
+	width, height float64
 }
 
 // RetrieveForms retrieves a list of Forms from the svg source.
@@ -61,6 +62,12 @@ func parseForms(element *svgparser.Element) ([]Form, error) {
 			return nil, fmt.Errorf("parsing circle: %w", err)
 		}
 		forms = append(forms, circle)
+	case string(LineType):
+		line, err := parseLine(*element)
+		if err != nil {
+			return nil, fmt.Errorf("parsing line: %w", err)
+		}
+		forms = append(forms, line)
 	case string(PathType):
 		path, err := parsePath(*element)
 		if err != nil {

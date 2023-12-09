@@ -162,6 +162,85 @@ func Test_Path_Length(t *testing.T) {
 	}
 }
 
+func Test_Path_Size(t *testing.T) {
+	tests := map[string]struct {
+		path Path
+		want Size
+	}{
+		"1": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{0, 0},
+				Next: &Path{
+					Command:    'V',
+					Parameters: []float64{100},
+				},
+			},
+			want: Size{
+				width:  0,
+				height: 100,
+			},
+		},
+		"2": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{100, 100},
+				Next: &Path{
+					Command:    'l',
+					Parameters: []float64{-100, 100},
+				},
+			},
+			want: Size{
+				width:  100,
+				height: 100,
+			},
+		},
+		"3": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{100, 200},
+				Next: &Path{
+					Command:    'L',
+					Parameters: []float64{-100, 100},
+					Next: &Path{
+						Command:    'H',
+						Parameters: []float64{400},
+						Next: &Path{
+							Command:    'l',
+							Parameters: []float64{-100, 200},
+						},
+					},
+				},
+			},
+			want: Size{
+				width:  500,
+				height: 200,
+			},
+		},
+		"4": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{110, 150},
+				Next: &Path{
+					Command:    'C',
+					Parameters: []float64{25, 190, 210, 250, 210, 30},
+				},
+			},
+			want: Size{
+				width:  122.329845,
+				height: 200,
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := tt.path.Size()
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func Test_parsePathCommand(t *testing.T) {
 	tests := map[string]struct {
 		pathString string

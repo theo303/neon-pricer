@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"theo303/neon-pricer/configuration"
 	"theo303/neon-pricer/internal/usecases"
 
 	"github.com/spf13/cobra"
@@ -20,6 +21,12 @@ Each groups of forms will be measured independantly and then summed together.
 Rectangles, circles and paths are supported.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(args)
+
+		conf, err := configuration.Load()
+		if err != nil {
+			panic(err)
+		}
+
 		groupID, err := cmd.Flags().GetString("group")
 		if err != nil {
 			panic(err)
@@ -35,7 +42,7 @@ Rectangles, circles and paths are supported.`,
 		}
 		var totalLength float64
 		for id, length := range lengths {
-			fmt.Printf("%s: %.2f\n", id, length)
+			fmt.Printf("%s: %.2fpx, %.2fmm\n", id, length, length*1000/conf.Scale)
 			totalLength += length
 		}
 		fmt.Printf("total: %.2f\n", totalLength)

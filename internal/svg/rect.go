@@ -32,14 +32,26 @@ func parseRectangle(element svgparser.Element) (Rectangle, error) {
 	if err != nil {
 		return Rectangle{}, fmt.Errorf("parsing witdh: %w", err)
 	}
-	x, err := strconv.ParseFloat(element.Attributes["x"], 64)
-	if err != nil {
-		return Rectangle{}, fmt.Errorf("parsing x: %w", err)
+	var x, y float64
+	_, ok := element.Attributes["x"]
+	if !ok {
+		x = 0
+	} else {
+		x, err = strconv.ParseFloat(element.Attributes["x"], 64)
+		if err != nil {
+			return Rectangle{}, fmt.Errorf("parsing x: %w", err)
+		}
 	}
-	y, err := strconv.ParseFloat(element.Attributes["y"], 64)
-	if err != nil {
-		return Rectangle{}, fmt.Errorf("parsing y: %w", err)
+	_, ok = element.Attributes["y"]
+	if !ok {
+		y = 0
+	} else {
+		y, err = strconv.ParseFloat(element.Attributes["y"], 64)
+		if err != nil {
+			return Rectangle{}, fmt.Errorf("parsing y: %w", err)
+		}
 	}
+
 	return Rectangle{
 		height: height,
 		width:  width,

@@ -15,7 +15,7 @@ var pathRegex = regexp.MustCompile(`[a-zA-Z][\d\-.,]*`)
 
 var paramRegex = regexp.MustCompile(`-?[\d]*\.?[\d]+`)
 
-const bezierPrecision = 0.01
+const bezierPrecision = 100
 const ellipticArcAngleStep = math.Pi / 100000
 
 var nbOfParams = map[rune]int{
@@ -104,6 +104,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[3]
+			lastCtrl = points[2]
 		}
 	case 'c':
 		for i := 0; i < len(p.Parameters); i += 6 {
@@ -115,6 +116,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[3]
+			lastCtrl = points[2]
 		}
 	case 'S':
 		for i := 0; i < len(p.Parameters); i += 4 {
@@ -126,6 +128,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[3]
+			lastCtrl = points[2]
 		}
 	case 's':
 		for i := 0; i < len(p.Parameters); i += 4 {
@@ -137,6 +140,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[3]
+			lastCtrl = points[2]
 		}
 	case 'Q':
 		for i := 0; i < len(p.Parameters); i += 4 {
@@ -147,6 +151,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[2]
+			lastCtrl = points[1]
 		}
 	case 'q':
 		for i := 0; i < len(p.Parameters); i += 4 {
@@ -157,6 +162,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[2]
+			lastCtrl = points[1]
 		}
 	case 'T':
 		for i := 0; i < len(p.Parameters); i += 2 {
@@ -167,6 +173,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[2]
+			lastCtrl = points[1]
 		}
 	case 't':
 		for i := 0; i < len(p.Parameters); i += 2 {
@@ -177,6 +184,7 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 			}
 			length += lengthBezier(points)
 			lastPos = points[2]
+			lastCtrl = points[1]
 		}
 	case 'A':
 		for i := 0; i < len(p.Parameters); i += 7 {
@@ -227,74 +235,90 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 	return length, nil
 }
 
+type bounds struct {
+	minX, maxX float64
+	minY, maxY float64
+}
+
 func (p Path) Size() (Size, error) {
-	b, err := p.bounds(point{})
-	if err != nil {
-		return Size{}, err
+	var b bounds
+	var lastPos point
+	var stop bool
+	for !stop {
+		if !p.checkNumberOfParams() {
+			return Size{}, fmt.Errorf("invalid number of parameters (%d) for command %c", len(p.Parameters), p.Command)
+		}
+		fmt.Println(b)
+		fmt.Println(p)
+		switch p.Command {
+		case 'M':
+			b.minX = p.Parameters[0]
+			b.maxX = p.Parameters[0]
+			b.minY = p.Parameters[1]
+			b.maxY = p.Parameters[1]
+			lastPos = point{p.Parameters[0], p.Parameters[1]}
+		case 'm':
+			b.minX = min(b.minX, lastPos.x+p.Parameters[0])
+			b.maxX = max(b.maxX, lastPos.x+p.Parameters[0])
+			b.minY = min(b.minY, lastPos.y+p.Parameters[1])
+			b.maxY = max(b.maxY, lastPos.y+p.Parameters[1])
+			lastPos = point{lastPos.x + p.Parameters[0], lastPos.y + p.Parameters[1]}
+		case 'H':
+			b.minX = min(b.minX, p.Parameters[0])
+			b.maxX = max(b.maxX, p.Parameters[0])
+			lastPos.x = p.Parameters[0]
+		case 'h':
+			b.minX = min(b.minX, lastPos.x+p.Parameters[0])
+			b.maxX = max(b.maxX, lastPos.x+p.Parameters[0])
+			lastPos.x += p.Parameters[0]
+		case 'V':
+			b.minY = min(b.minY, p.Parameters[0])
+			b.maxY = max(b.maxY, p.Parameters[0])
+			lastPos.y = p.Parameters[0]
+		case 'v':
+			b.minY = min(b.minY, lastPos.y+p.Parameters[0])
+			b.maxY = max(b.maxY, lastPos.y+p.Parameters[0])
+			lastPos.y += p.Parameters[0]
+		case 'L':
+			b.minX = min(b.minX, p.Parameters[0])
+			b.maxX = max(b.maxX, p.Parameters[0])
+			b.minY = min(b.minY, p.Parameters[1])
+			b.maxY = max(b.maxY, p.Parameters[1])
+			lastPos.x = p.Parameters[0]
+			lastPos.y = p.Parameters[1]
+		case 'l':
+			b.minX = min(b.minX, lastPos.x+p.Parameters[0])
+			b.maxX = max(b.maxX, lastPos.x+p.Parameters[0])
+			b.minY = min(b.minY, lastPos.y+p.Parameters[1])
+			b.maxY = max(b.maxY, lastPos.y+p.Parameters[1])
+			lastPos.x += p.Parameters[0]
+			lastPos.y += p.Parameters[1]
+		case 'C':
+			for i := 0; i < len(p.Parameters); i += nbOfParams[p.Command] {
+				// points := []point{
+				// 	lastPos,
+				// 	{x: p.Parameters[i], y: p.Parameters[i+1]},
+				// 	{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+				// 	{x: p.Parameters[i+4], y: p.Parameters[i+5]},
+				// }
+				// xsys := bezierXsAndYs(points)
+				// a := []string{"1", "2", "3"}
+				// b.minX = min(a)
+				// b.maxX = max(b.maxX, xsys[0])
+				// b.minY = min(b.minY, xsys[1])
+				// b.maxY = max(b.maxY, xsys[1])
+			}
+		}
+		if p.Next != nil {
+			p = *p.Next
+		} else {
+			stop = true
+		}
 	}
 	return Size{
-		height: b.maxY - b.minY,
 		width:  b.maxX - b.minX,
+		height: b.maxY - b.minY,
 	}, nil
-}
-
-func (p Path) bounds(lastPos point) (bounds, error) {
-	var b bounds
-
-	if !p.checkNumberOfParams() {
-		return bounds{}, fmt.Errorf("invalid number of parameters (%d) for command %c", len(p.Parameters), p.Command)
-	}
-	switch p.Command {
-	case 'M':
-		b.minX = p.Parameters[0]
-		b.maxX = p.Parameters[0]
-		b.minY = p.Parameters[1]
-		b.maxY = p.Parameters[1]
-		lastPos.x = p.Parameters[0]
-		lastPos.y = p.Parameters[1]
-	case 'm':
-		b.minX += p.Parameters[0]
-		b.maxX += p.Parameters[0]
-		b.minY += p.Parameters[1]
-		b.maxY += p.Parameters[1]
-		lastPos.x += p.Parameters[0]
-		lastPos.y += p.Parameters[1]
-	case 'V':
-		// b.minX = lastPos.x
-		// b.maxX = lastPos.x
-
-	default:
-		fmt.Printf("Unrecognized path command %c\n", p.Command)
-	}
-	if p.Next != nil {
-		nb, err := p.Next.bounds(lastPos)
-		if err != nil {
-			return bounds{}, err
-		}
-		b = b.biggest(nb)
-	}
-	return b, nil
-}
-
-type bounds struct {
-	minX, minY float64
-	maxX, maxY float64
-}
-
-func (b bounds) biggest(nb bounds) bounds {
-	if nb.minX < b.minX {
-		b.minX = nb.minX
-	}
-	if nb.minY < b.minY {
-		b.minY = nb.minY
-	}
-	if nb.maxX > b.maxX {
-		b.maxX = nb.maxX
-	}
-	if nb.maxY > b.maxY {
-		b.maxY = nb.maxY
-	}
-	return b
 }
 
 func lengthLine(lx, ly float64) float64 {
@@ -332,6 +356,9 @@ func newPath(str string) (*Path, error) {
 
 func parsePath(element svgparser.Element) (Path, error) {
 	pathString := element.Attributes["d"]
+	pathString = strings.ReplaceAll(pathString, "\n", "")
+	pathString = strings.ReplaceAll(pathString, " ", "")
+	pathString = strings.ReplaceAll(pathString, "\t", "")
 	path, err := parsePathCommand(pathString)
 	if err != nil {
 		return Path{}, err
