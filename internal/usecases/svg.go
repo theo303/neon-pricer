@@ -35,6 +35,22 @@ func GetLengths(formsGroups map[string][]svg.Form) (map[string]float64, error) {
 	return lengths, nil
 }
 
-func GetSizes(formsGroups map[string][]svg.Form) (map[string]float64, error) {
-	return nil, nil
+func GetBounds(formsGroups map[string][]svg.Form) (map[string]svg.Bounds, error) {
+	sizes := make(map[string]svg.Bounds)
+	for id, forms := range formsGroups {
+		var b svg.Bounds
+		for i, form := range forms {
+			nb, err := form.Bounds()
+			if err != nil {
+				return nil, fmt.Errorf("retrieving bounds on form n %d: %w", i, err)
+			}
+			if i == 0 {
+				b = nb
+			} else {
+				b = b.Expand(nb)
+			}
+		}
+		sizes[id] = b
+	}
+	return sizes, nil
 }

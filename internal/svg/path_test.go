@@ -165,7 +165,7 @@ func Test_Path_Length(t *testing.T) {
 func Test_Path_Size(t *testing.T) {
 	tests := map[string]struct {
 		path Path
-		want Size
+		want Bounds
 	}{
 		"1": {
 			path: Path{
@@ -176,9 +176,8 @@ func Test_Path_Size(t *testing.T) {
 					Parameters: []float64{100},
 				},
 			},
-			want: Size{
-				width:  0,
-				height: 100,
+			want: Bounds{
+				maxY: 100,
 			},
 		},
 		"2": {
@@ -190,9 +189,11 @@ func Test_Path_Size(t *testing.T) {
 					Parameters: []float64{-100, 100},
 				},
 			},
-			want: Size{
-				width:  100,
-				height: 100,
+			want: Bounds{
+				minX: 0,
+				maxX: 100,
+				minY: 100,
+				maxY: 200,
 			},
 		},
 		"3": {
@@ -212,9 +213,11 @@ func Test_Path_Size(t *testing.T) {
 					},
 				},
 			},
-			want: Size{
-				width:  500,
-				height: 200,
+			want: Bounds{
+				minX: -100,
+				maxX: 400,
+				minY: 100,
+				maxY: 300,
 			},
 		},
 		"4": {
@@ -226,15 +229,33 @@ func Test_Path_Size(t *testing.T) {
 					Parameters: []float64{25, 190, 210, 250, 210, 30},
 				},
 			},
-			want: Size{
-				width:  122.329845,
-				height: 200,
+			want: Bounds{
+				minX: 87.67,
+				maxX: 210,
+				minY: 30,
+				maxY: 188.86,
+			},
+		},
+		"5": {
+			path: Path{
+				Command:    'M',
+				Parameters: []float64{10, 0},
+				Next: &Path{
+					Command:    'A',
+					Parameters: []float64{10, 10, 0, 1, 1, 0, 10},
+				},
+			},
+			want: Bounds{
+				minX: 0,
+				maxX: 20,
+				minY: 0,
+				maxY: 20,
 			},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := tt.path.Size()
+			got, err := tt.path.Bounds()
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

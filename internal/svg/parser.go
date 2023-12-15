@@ -26,11 +26,7 @@ type point struct {
 // Form defines a svg object that can be measured, sized.
 type Form interface {
 	Length() (float64, error)
-	Size() (Size, error)
-}
-
-type Size struct {
-	width, height float64
+	Bounds() (Bounds, error)
 }
 
 // RetrieveForms retrieves a list of Forms from the svg source.

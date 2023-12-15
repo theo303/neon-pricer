@@ -18,10 +18,12 @@ func (l Line) Length() (float64, error) {
 	return math.Sqrt(lx*lx + ly*ly), nil
 }
 
-func (l Line) Size() (Size, error) {
-	return Size{
-		width:  max(l.p1.x, l.p2.x) - min(l.p1.x, l.p2.x),
-		height: max(l.p1.y, l.p2.y) - min(l.p1.y, l.p2.y),
+func (l Line) Bounds() (Bounds, error) {
+	return Bounds{
+		minX: min(l.p1.x, l.p2.x),
+		maxX: max(l.p1.x, l.p2.x),
+		minY: min(l.p1.y, l.p2.y),
+		maxY: max(l.p1.y, l.p2.y),
 	}, nil
 }
 

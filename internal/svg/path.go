@@ -15,7 +15,7 @@ var pathRegex = regexp.MustCompile(`[a-zA-Z][\d\-.,]*`)
 
 var paramRegex = regexp.MustCompile(`-?[\d]*\.?[\d]+`)
 
-const bezierPrecision = 100
+const bezierStep = 100
 const ellipticArcAngleStep = math.Pi / 100000
 
 var nbOfParams = map[rune]int{
@@ -235,21 +235,14 @@ func (p Path) length(firstPos, lastPos, lastCtrl point) (float64, error) {
 	return length, nil
 }
 
-type bounds struct {
-	minX, maxX float64
-	minY, maxY float64
-}
-
-func (p Path) Size() (Size, error) {
-	var b bounds
-	var lastPos point
+func (p Path) Bounds() (Bounds, error) {
+	var b Bounds
+	var lastPos, lastCtrl point
 	var stop bool
 	for !stop {
 		if !p.checkNumberOfParams() {
-			return Size{}, fmt.Errorf("invalid number of parameters (%d) for command %c", len(p.Parameters), p.Command)
+			return Bounds{}, fmt.Errorf("invalid number of parameters (%d) for command %c", len(p.Parameters), p.Command)
 		}
-		fmt.Println(b)
-		fmt.Println(p)
 		switch p.Command {
 		case 'M':
 			b.minX = p.Parameters[0]
@@ -264,60 +257,164 @@ func (p Path) Size() (Size, error) {
 			b.maxY = max(b.maxY, lastPos.y+p.Parameters[1])
 			lastPos = point{lastPos.x + p.Parameters[0], lastPos.y + p.Parameters[1]}
 		case 'H':
-			b.minX = min(b.minX, p.Parameters[0])
-			b.maxX = max(b.maxX, p.Parameters[0])
 			lastPos.x = p.Parameters[0]
+			b = b.expandPoint(lastPos)
 		case 'h':
-			b.minX = min(b.minX, lastPos.x+p.Parameters[0])
-			b.maxX = max(b.maxX, lastPos.x+p.Parameters[0])
 			lastPos.x += p.Parameters[0]
+			b = b.expandPoint(lastPos)
 		case 'V':
-			b.minY = min(b.minY, p.Parameters[0])
-			b.maxY = max(b.maxY, p.Parameters[0])
 			lastPos.y = p.Parameters[0]
+			b = b.expandPoint(lastPos)
 		case 'v':
-			b.minY = min(b.minY, lastPos.y+p.Parameters[0])
-			b.maxY = max(b.maxY, lastPos.y+p.Parameters[0])
 			lastPos.y += p.Parameters[0]
+			b = b.expandPoint(lastPos)
 		case 'L':
-			b.minX = min(b.minX, p.Parameters[0])
-			b.maxX = max(b.maxX, p.Parameters[0])
-			b.minY = min(b.minY, p.Parameters[1])
-			b.maxY = max(b.maxY, p.Parameters[1])
 			lastPos.x = p.Parameters[0]
 			lastPos.y = p.Parameters[1]
+			b = b.expandPoint(lastPos)
 		case 'l':
-			b.minX = min(b.minX, lastPos.x+p.Parameters[0])
-			b.maxX = max(b.maxX, lastPos.x+p.Parameters[0])
-			b.minY = min(b.minY, lastPos.y+p.Parameters[1])
-			b.maxY = max(b.maxY, lastPos.y+p.Parameters[1])
 			lastPos.x += p.Parameters[0]
 			lastPos.y += p.Parameters[1]
+			b = b.expandPoint(lastPos)
 		case 'C':
 			for i := 0; i < len(p.Parameters); i += nbOfParams[p.Command] {
-				// points := []point{
-				// 	lastPos,
-				// 	{x: p.Parameters[i], y: p.Parameters[i+1]},
-				// 	{x: p.Parameters[i+2], y: p.Parameters[i+3]},
-				// 	{x: p.Parameters[i+4], y: p.Parameters[i+5]},
-				// }
-				// xsys := bezierXsAndYs(points)
-				// a := []string{"1", "2", "3"}
-				// b.minX = min(a)
-				// b.maxX = max(b.maxX, xsys[0])
-				// b.minY = min(b.minY, xsys[1])
-				// b.maxY = max(b.maxY, xsys[1])
+				points := []point{
+					lastPos,
+					{x: p.Parameters[i], y: p.Parameters[i+1]},
+					{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+					{x: p.Parameters[i+4], y: p.Parameters[i+5]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[3]
+				lastCtrl = points[2]
+			}
+		case 'c':
+			for i := 0; i < len(p.Parameters); i += 6 {
+				points := []point{
+					lastPos,
+					{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
+					{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
+					{x: lastPos.x + p.Parameters[i+4], y: lastPos.y + p.Parameters[i+5]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[3]
+				lastCtrl = points[2]
+			}
+		case 'S':
+			for i := 0; i < len(p.Parameters); i += 4 {
+				points := []point{
+					lastPos,
+					reflectPoint(lastCtrl, lastPos),
+					{x: p.Parameters[i], y: p.Parameters[i+1]},
+					{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[3]
+				lastCtrl = points[2]
+			}
+		case 's':
+			for i := 0; i < len(p.Parameters); i += 4 {
+				points := []point{
+					lastPos,
+					reflectPoint(lastCtrl, lastPos),
+					{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
+					{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[3]
+				lastCtrl = points[2]
+			}
+		case 'Q':
+			for i := 0; i < len(p.Parameters); i += 4 {
+				points := []point{
+					lastPos,
+					{x: p.Parameters[i], y: p.Parameters[i+1]},
+					{x: p.Parameters[i+2], y: p.Parameters[i+3]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[2]
+				lastCtrl = points[1]
+			}
+		case 'q':
+			for i := 0; i < len(p.Parameters); i += 4 {
+				points := []point{
+					lastPos,
+					{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
+					{x: lastPos.x + p.Parameters[i+2], y: lastPos.y + p.Parameters[i+3]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[2]
+				lastCtrl = points[1]
+			}
+		case 'T':
+			for i := 0; i < len(p.Parameters); i += 2 {
+				points := []point{
+					lastPos,
+					reflectPoint(lastCtrl, lastPos),
+					{x: p.Parameters[i], y: p.Parameters[i+1]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[2]
+				lastCtrl = points[1]
+			}
+		case 't':
+			for i := 0; i < len(p.Parameters); i += 2 {
+				points := []point{
+					lastPos,
+					reflectPoint(lastCtrl, lastPos),
+					{x: lastPos.x + p.Parameters[i], y: lastPos.y + p.Parameters[i+1]},
+				}
+				b = b.Expand(boundsBezier(points))
+				lastPos = points[2]
+				lastCtrl = points[1]
+			}
+		case 'A':
+			for i := 0; i < len(p.Parameters); i += 7 {
+				end := point{p.Parameters[i+5], p.Parameters[i+6]}
+				arc, err := arcFromSVGParams(
+					lastPos,
+					end,
+					p.Parameters[i], p.Parameters[i+1],
+					p.Parameters[i+2],
+					p.Parameters[i+3] == 1,
+					p.Parameters[i+4] == 1,
+				)
+				if err != nil {
+					return Bounds{}, fmt.Errorf("building arc: %w", err)
+				}
+				b = b.Expand(arc.bounds(ellipticArcAngleStep))
+				lastPos = end
+			}
+		case 'a':
+			for i := 0; i < len(p.Parameters); i += 7 {
+				end := point{lastPos.x + p.Parameters[i+5], lastPos.y + p.Parameters[i+6]}
+				arc, err := arcFromSVGParams(
+					lastPos,
+					end,
+					p.Parameters[i], p.Parameters[i+1],
+					p.Parameters[i+2],
+					p.Parameters[i+3] == 1,
+					p.Parameters[i+4] == 1,
+				)
+				if err != nil {
+					return Bounds{}, fmt.Errorf("building arc: %w", err)
+				}
+				b = b.Expand(arc.bounds(ellipticArcAngleStep))
+				lastPos = end
 			}
 		}
+
 		if p.Next != nil {
 			p = *p.Next
 		} else {
 			stop = true
 		}
 	}
-	return Size{
-		width:  b.maxX - b.minX,
-		height: b.maxY - b.minY,
+	return Bounds{
+		minX: math.Round((b.minX)*100) / 100,
+		maxX: math.Round((b.maxX)*100) / 100,
+		minY: math.Round((b.minY)*100) / 100,
+		maxY: math.Round((b.maxY)*100) / 100,
 	}, nil
 }
 

@@ -24,7 +24,7 @@ func lengthBezier(points []point) float64 {
 	step := 0.5
 	segments := []point{points[0], points[len(points)-1]}
 	var newSegments []point
-	for math.Abs(lastLength-length) > 1.0/bezierPrecision {
+	for math.Abs(lastLength-length) > 1.0/bezierStep {
 		lastLength = length
 		newSegments = make([]point, (len(segments)-1)*2+1)
 		for i := range newSegments {
@@ -42,15 +42,16 @@ func lengthBezier(points []point) float64 {
 	return math.Round(length*100) / 100
 }
 
-func bezierXsAndYs(points []point) [2][bezierPrecision]float64 {
-	positions := [2][bezierPrecision]float64{
-		{points[0].x},
-		{points[0].y},
+func boundsBezier(points []point) Bounds {
+	b := Bounds{
+		minX: min(points[0].x, points[len(points)-1].x),
+		maxX: max(points[0].x, points[len(points)-1].x),
+		minY: min(points[0].y, points[len(points)-1].y),
+		maxY: max(points[0].y, points[len(points)-1].y),
 	}
-	for i := 1; i < bezierPrecision; i++ {
-		p := splitBezier(float64(i)/bezierPrecision, points)[0]
-		positions[0][i] = p.x
-		positions[1][i] = p.y
+	for i := 1; i < bezierStep; i++ {
+		p := splitBezier(float64(i)/bezierStep, points)[0]
+		b = b.expandPoint(p)
 	}
-	return positions
+	return b
 }

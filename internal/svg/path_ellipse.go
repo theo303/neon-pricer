@@ -131,3 +131,21 @@ func (a arc) length(step float64) float64 {
 
 	return length
 }
+
+func (a arc) bounds(step float64) Bounds {
+	b := Bounds{
+		minX: min(a.start.x, a.end.x),
+		maxX: max(a.start.x, a.end.x),
+		minY: min(a.start.y, a.end.y),
+		maxY: max(a.start.y, a.end.y),
+	}
+
+	deltaAngle := math.Abs(math.Mod(a.endAngle-a.startAngle, math.Pi*2))
+	if !a.clockwise {
+		deltaAngle = math.Pi*2 - deltaAngle
+	}
+	for t := step; t < deltaAngle; t += step {
+		b = b.expandPoint(a.point(a.startAngle + t))
+	}
+	return b
+}

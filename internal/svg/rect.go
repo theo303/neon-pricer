@@ -16,10 +16,12 @@ func (r Rectangle) Length() (float64, error) {
 	return r.height*2 + r.width*2, nil
 }
 
-func (r Rectangle) Size() (Size, error) {
-	return Size{
-		height: r.height,
-		width:  r.width,
+func (r Rectangle) Bounds() (Bounds, error) {
+	return Bounds{
+		minX: r.x,
+		maxX: r.x + r.width,
+		minY: r.y,
+		maxY: r.y + r.height,
 	}, nil
 }
 

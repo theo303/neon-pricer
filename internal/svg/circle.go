@@ -17,10 +17,12 @@ func (c Circle) Length() (float64, error) {
 	return 2 * math.Pi * c.r, nil
 }
 
-func (c Circle) Size() (Size, error) {
-	return Size{
-		width:  c.r,
-		height: c.r,
+func (c Circle) Bounds() (Bounds, error) {
+	return Bounds{
+		minX: c.x - c.r,
+		maxX: c.x + c.r,
+		minY: c.x - c.r,
+		maxY: c.x + c.r,
 	}, nil
 }
 
