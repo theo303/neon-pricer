@@ -1,0 +1,19 @@
+
+<table>
+    <tr>
+        <th>Group</th>
+        <th>Lenth in px</th>
+        <th>Lenth in mm</th>
+        <th>Width in mm</th>
+        <th>Height in mm</th>
+    </tr>
+    {{ range .Results }}
+        <tr>
+            <th>{{ .Group }}</th>
+            <th>{{ .LengthPx }}</th>
+            <th>{{ .LengthMm }}</th>
+            <th>{{ .WidthMm }}</th>
+            <th>{{ .HeightMm }}</th>
+        </tr>
+    {{ end }}
+</table>

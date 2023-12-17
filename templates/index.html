@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Pricer</title>
+    <script src="https://unpkg.com/htmx.org@1.9.9"
+        integrity="sha384-QFjmbokDn2DjBjq+fM+8LUIVrAgqcNW2s0PjAxHETgRn9l4fvX31ZxDxvwQnyMOX"
+        crossorigin="anonymous"></script>
+    <style>
+        body {
+            background-color: darkgrey;
+        }
+
+        .center {
+            margin: auto;
+            width: 60%;
+        }
+
+        .block {
+            padding: 10px;
+            border-radius: 15px;
+            border: solid 3px black;
+            margin: 12px;
+        }
+
+        .title {
+            background-color: coral;
+        }
+        .title h1 {
+            text-align: center;
+            font-family: "Lucida Console", Courier, monospace;
+        }
+        
+        .content {
+            background-color: whitesmoke;
+        }
+
+        table, th, td {
+            padding: 5px;
+            border: 1px solid black;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="center">
+        <div class="block title">
+            <h1>Neon Pricer</h1>
+        </div>
+        <div class="block content form">
+            <form id='form' hx-encoding='multipart/form-data' hx-post='/compute' hx-target="next .block">
+                <input type='file' name='file'>
+                <button>
+                    Compute
+                </button>
+                <progress id='progress' value='0' max='100'></progress>
+            </form>
+            <script>
+                htmx.on('#form', 'htmx:xhr:progress', function(evt) {
+                  htmx.find('#progress').setAttribute('value', evt.detail.loaded/evt.detail.total * 100)
+                });
+            </script>
+        </div>
+        <div class="block content result">
+            <div class="result">
+                No file imported yet.
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
