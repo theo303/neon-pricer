@@ -1,1 +1,36 @@
 scale: 2834.6457
+silicones:
+  - size: 6
+    price: 0.70
+  - size: 8
+    price: 0.85
+  - size: 12
+    price: 1.10
+leds:
+  - name: couleur
+    price: 0.85
+  - name: RGB
+    price: 4.20
+  - name: pixel
+    price: 8.40
+  - name: pixel2
+    price: 8.40
+plexis:
+  - name: incolore
+    price: 50
+  - name: noir
+    price: 60.27
+controlers:
+  - name: DIMMER
+    price: 2.06
+  - name: RGB
+    price: 5.55
+  - name: PIXEL
+    price: 3.17
+power_supplies:
+  - amp: 1
+    price: 1.0
+  - amp: 5
+    price: 5.55
+  - amp: 10
+    price: 10.30

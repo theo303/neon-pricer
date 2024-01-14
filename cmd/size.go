@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"theo303/neon-pricer/configuration"
+	"theo303/neon-pricer/conf"
 	"theo303/neon-pricer/internal/usecases"
 
 	"github.com/spf13/cobra"
@@ -15,7 +15,7 @@ var sizeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(args)
 
-		conf, err := configuration.Load()
+		conf, err := conf.Load()
 		if err != nil {
 			panic(err)
 		}

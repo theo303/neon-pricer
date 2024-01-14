@@ -1,4 +1,3 @@
-
 <table>
     <tr>
         <th>Group</th>
@@ -9,11 +8,11 @@
     </tr>
     {{ range .Results }}
         <tr>
-            <th>{{ .Group }}</th>
-            <th>{{ .LengthPx }}</th>
-            <th>{{ .LengthMm }}</th>
-            <th>{{ .WidthMm }}</th>
-            <th>{{ .HeightMm }}</th>
+            <td>{{ .Group }}</td>
+            <td>{{ .LengthPx }}</td>
+            <td>{{ .LengthMm }}</td>
+            <td>{{ .WidthMm }}</td>
+            <td>{{ .HeightMm }}</td>
         </tr>
     {{ end }}
 </table>

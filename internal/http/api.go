@@ -1,22 +1,35 @@
-package api
+package http
 
 import (
 	"fmt"
 	"math"
 	"net/http"
-	"theo303/neon-pricer/configuration"
+
+	"theo303/neon-pricer/conf"
 	"theo303/neon-pricer/internal/svg"
 	"theo303/neon-pricer/internal/usecases"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Conf struct {
-	configuration.Configuration
-	Port int
+type API struct {
+	config *conf.Configuration
+	port   int
+
+	configHandlers configHandlers
 }
 
-func Run(conf Conf) error {
+func NewAPI(config conf.Configuration, port int) API {
+	return API{
+		config: &config,
+		port:   port,
+		configHandlers: configHandlers{
+			config: &config,
+		},
+	}
+}
+
+func (a API) Run() error {
 	r := gin.Default()
 
 	r.LoadHTMLGlob("templates/*")
@@ -24,9 +37,11 @@ func Run(conf Conf) error {
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
-	r.POST("/compute", compute(conf.Scale))
+	r.GET("/config", a.configHandlers.getConfig())
+	r.POST("/config", a.configHandlers.setConfig())
+	r.POST("/compute", a.compute())
 
-	return r.Run(fmt.Sprintf(":%d", conf.Port))
+	return r.Run(fmt.Sprintf(":%d", a.port))
 }
 
 type computationResult struct {
@@ -40,7 +55,7 @@ type resultData struct {
 	Results []computationResult
 }
 
-func compute(scale float64) gin.HandlerFunc {
+func (a API) compute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -74,16 +89,13 @@ func compute(scale float64) gin.HandlerFunc {
 
 		var resData resultData
 		for g := range forms {
-			fmt.Println(lengths[g] * 1000.0 / scale)
 			resData.Results = append(resData.Results, computationResult{
 				Group:    g,
 				LengthPx: math.Round(lengths[g]),
-				LengthMm: math.Round(lengths[g] * 1000.0 / scale),
-				WidthMm:  math.Round(bounds[g].Width() * 1000.0 / scale),
-				HeightMm: math.Round(bounds[g].Height() * 1000.0 / scale),
+				LengthMm: math.Round(lengths[g] * 1000.0 / a.config.Scale),
+				WidthMm:  math.Round(bounds[g].Width() * 1000.0 / a.config.Scale),
+				HeightMm: math.Round(bounds[g].Height() * 1000.0 / a.config.Scale),
 			})
-
-			fmt.Println(resData)
 		}
 
 		c.HTML(http.StatusOK, "response.html", resData)

@@ -64,10 +64,16 @@
                 });
             </script>
         </div>
-        <div class="block content result">
-            <div class="result">
+        <div class="block content">
+            <div>
                 No file imported yet.
             </div>
+        </div>
+        <div class="block content">
+            <h3> 
+                Configuration
+            </h3>
+            <div hx-get='/config' hx-trigger="load"></div>
         </div>
     </div>
 </body>

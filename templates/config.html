@@ -1,0 +1,77 @@
+<form>
+    <button hx-post="/config">Submit</button>
+    <table>
+        <tr>
+            <th colspan=2>Global</th>
+        </tr>
+        <tr>
+            <td>scale (px per 1000mm)</td>
+            <td><input type="number" name="scale" value="{{ .Scale }}"></input></td>
+        </tr>
+        <tr>
+            <th>Silicones</th>
+            <th>price per meter</th>
+        </tr>
+        {{ range .Silicones }}
+            <tr>
+                <td>{{ .SizeMm }}mm</td>
+                <td>
+                    <input type="number" name="silic-{{ .SizeMm }}"
+                     value="{{ .PricePerMeter }}"></input>
+                </td>
+            </tr>
+        {{ end }}
+        <tr>
+            <th>LEDs</th>
+            <th>price per meter</th>
+        </tr>
+        {{ range .LEDs }}
+            <tr>
+                <td>{{ .Name }}</td>
+                <td>
+                    <input type="number" name="led-{{ .Name }}"
+                     value="{{ .PricePerMeter }}"></input>
+                </td>
+            </tr>
+        {{ end }}
+        <tr>
+            <th>Plexis</th>
+            <th>price per meter square</th>
+        </tr>
+        {{ range .Plexis }}
+            <tr>
+                <td>{{ .Name }}</td>
+                <td>
+                    <input type="number" name="plexi-{{ .Name }}"
+                     value="{{ .PricePerMeterSquare }}"></input>
+                </td>
+            </tr>
+        {{ end }}
+        <tr>
+            <th>Controlers</th>
+            <th>price</th>
+        </tr>
+        {{ range .Controlers }}
+            <tr>
+                <td>{{ .Name }}</td>
+                <td>
+                    <input type="number" name="controler-{{ .Name }}"
+                     value="{{ .Price }}"></input>
+                </td>
+            </tr>
+        {{ end }}
+        <tr>
+            <th>Power Supplies</th>
+            <th>price</th>
+        </tr>
+        {{ range .PowerSupplies }}
+            <tr>
+                <td>{{ .Amp }}A</td>
+                <td>
+                    <input type="number" name="powersupply-{{ .Amp }}"
+                     value="{{ .Price }}"></input>
+                </td>
+            </tr>
+        {{ end }}
+    </table>
+</form>
