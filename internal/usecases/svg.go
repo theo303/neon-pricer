@@ -3,6 +3,8 @@ package usecases
 import (
 	"fmt"
 	"os"
+
+	"theo303/neon-pricer/internal/domain"
 	"theo303/neon-pricer/internal/svg"
 )
 
@@ -36,7 +38,7 @@ func GetLengths(formsGroups map[string][]svg.Form) (map[string]float64, error) {
 }
 
 func GetBounds(formsGroups map[string][]svg.Form) (map[string]svg.Bounds, error) {
-	sizes := make(map[string]svg.Bounds)
+	bounds := make(map[string]svg.Bounds)
 	for id, forms := range formsGroups {
 		var b svg.Bounds
 		for i, form := range forms {
@@ -50,7 +52,37 @@ func GetBounds(formsGroups map[string][]svg.Form) (map[string]svg.Bounds, error)
 				b = b.Expand(nb)
 			}
 		}
-		sizes[id] = b
+		bounds[id] = b
+	}
+	return bounds, nil
+}
+
+// GetSizes retrieves lengths, height and width for each group of form and scales them.
+func GetSizes(formsGroups map[string][]svg.Form, scale float64) (map[string]domain.Size, error) {
+	lengths, err := GetLengths(formsGroups)
+	if err != nil {
+		return nil, fmt.Errorf("computing lengths: %w", err)
+	}
+	bounds, err := GetBounds(formsGroups)
+	if err != nil {
+		return nil, fmt.Errorf("computing bounds: %w", err)
+	}
+	sizes := make(map[string]domain.Size)
+	for id := range formsGroups {
+		length, ok := lengths[id]
+		if !ok {
+			return nil, fmt.Errorf("missing id %s in lengths map", id)
+		}
+		bound, ok := bounds[id]
+		if !ok {
+			return nil, fmt.Errorf("missing id %s in bounds map", id)
+		}
+		sizes[id] = domain.Size{
+			Length:   length * 1000 / scale,
+			LengthPx: length,
+			Height:   bound.Height() * 1000 / scale,
+			Width:    bound.Width() * 1000 / scale,
+		}
 	}
 	return sizes, nil
 }

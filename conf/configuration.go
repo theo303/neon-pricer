@@ -33,13 +33,17 @@ type PowerSupply struct {
 	Price float64 `mapstructure:"price"`
 }
 
-type Configuration struct {
-	Scale         float64       `mapstructure:"scale"`
+type Pricing struct {
 	Silicones     []Silicone    `mapstructure:"silicones"`
 	LEDs          []LED         `mapstructure:"leds"`
 	Plexis        []Plexi       `mapstructure:"plexis"`
 	Controlers    []Controler   `mapstructure:"controlers"`
 	PowerSupplies []PowerSupply `mapstructure:"power_supplies"`
+}
+
+type Configuration struct {
+	Pricing `mapstructure:",squash"`
+	Scale   float64 `mapstructure:"scale"`
 }
 
 // Load reads configuration from file.

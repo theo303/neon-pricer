@@ -1,0 +1,9 @@
+<fieldset>
+    <legend>Plexi</legend>
+    {{ range .Plexis }}
+        <div>
+            <input type="radio" value="{{ .Name }}" name="plexi" {{ if .IsDefault }} checked {{ end }}>
+            <label for="{{ .Name }}">{{ .Name }}</label>
+        </div>
+    {{ end }}
+</fieldset>

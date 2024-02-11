@@ -1,18 +1,22 @@
 <table>
     <tr>
         <th>Group</th>
-        <th>Lenth in px</th>
         <th>Lenth in mm</th>
         <th>Width in mm</th>
         <th>Height in mm</th>
+        <th>Silicone Price</th>
+        <th>LED Price</th>
+        <th>Plexi Price</th>
     </tr>
     {{ range .Results }}
         <tr>
             <td>{{ .Group }}</td>
-            <td>{{ .LengthPx }}</td>
             <td>{{ .LengthMm }}</td>
             <td>{{ .WidthMm }}</td>
             <td>{{ .HeightMm }}</td>
+            <td>{{ .SiliconePrice }}</td>
+            <td>{{ .LedPrice }}</td>
+            <td>{{ .PlexiPrice }}</td>
         </tr>
     {{ end }}
 </table>

@@ -1,11 +1,15 @@
 package svg
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
+	"regexp"
 
 	"github.com/JoshVarga/svgparser"
 )
+
+var regexpHexCode = regexp.MustCompile(`_[xX]([0-9a-fA-F]+)_`)
 
 const decoupe = "DECOUPE"
 
@@ -90,7 +94,6 @@ func parseGroups(element *svgparser.Element, groupID string) (map[string][]Form,
 		return nil, nil
 	}
 
-	var err error
 	formsGroups := make(map[string][]Form)
 	for _, child := range element.Children {
 		if child.Name != "g" {
@@ -99,11 +102,30 @@ func parseGroups(element *svgparser.Element, groupID string) (map[string][]Form,
 		if groupID != "" && child.Attributes["id"] != groupID {
 			continue
 		}
-		formsGroups[child.Attributes["id"]], err = parseForms(child)
+
+		groupID, err := sanitizeGroupID(child.Attributes["id"])
+		if err != nil {
+			return nil, fmt.Errorf("sanitizing group id %s: %w", child.Attributes["id"], err)
+		}
+
+		formsGroups[groupID], err = parseForms(child)
 		if err != nil {
 			return nil, fmt.Errorf("parsing group of forms %s: %w", child.Attributes["id"], err)
 		}
 	}
 
 	return formsGroups, nil
+}
+
+func sanitizeGroupID(groupID string) (string, error) {
+	loc := regexpHexCode.FindStringSubmatchIndex(groupID)
+	for loc != nil {
+		decodedStr, err := hex.DecodeString(groupID[loc[0]+2 : loc[1]-1])
+		if err != nil {
+			return "", fmt.Errorf("decoding %s: %w", groupID[loc[0]:loc[1]], err)
+		}
+		groupID = groupID[:loc[0]] + string(decodedStr) + groupID[loc[1]:]
+		loc = regexpHexCode.FindStringIndex(groupID)
+	}
+	return groupID, nil
 }

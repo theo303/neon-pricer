@@ -39,17 +39,21 @@ func (a API) Run() error {
 	})
 	r.GET("/config", a.configHandlers.getConfig())
 	r.POST("/config", a.configHandlers.setConfig())
+	r.GET("/input", a.configHandlers.getInput())
 	r.POST("/compute", a.compute())
 
 	return r.Run(fmt.Sprintf(":%d", a.port))
 }
 
 type computationResult struct {
-	Group    string
-	LengthPx float64
-	LengthMm float64
-	WidthMm  float64
-	HeightMm float64
+	Group         string
+	LengthPx      float64
+	LengthMm      float64
+	WidthMm       float64
+	HeightMm      float64
+	SiliconePrice float64
+	LedPrice      float64
+	PlexiPrice    float64
 }
 type resultData struct {
 	Results []computationResult
@@ -75,26 +79,29 @@ func (a API) compute() gin.HandlerFunc {
 			return
 		}
 
-		lengths, err := usecases.GetLengths(forms)
+		sizes, err := usecases.GetSizes(forms, a.config.Scale)
 		if err != nil {
 			_ = c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
-
-		bounds, err := usecases.GetBounds(forms)
+		fmt.Println(c.PostForm("plexi"))
+		prices, err := usecases.GetPrice(a.config.Pricing, sizes, c.PostForm("plexi"))
 		if err != nil {
 			_ = c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
 		var resData resultData
-		for g := range forms {
+		for g, size := range sizes {
 			resData.Results = append(resData.Results, computationResult{
-				Group:    g,
-				LengthPx: math.Round(lengths[g]),
-				LengthMm: math.Round(lengths[g] * 1000.0 / a.config.Scale),
-				WidthMm:  math.Round(bounds[g].Width() * 1000.0 / a.config.Scale),
-				HeightMm: math.Round(bounds[g].Height() * 1000.0 / a.config.Scale),
+				Group:         g,
+				LengthPx:      math.Round(size.LengthPx),
+				LengthMm:      math.Round(size.Length),
+				WidthMm:       math.Round(size.Width),
+				HeightMm:      math.Round(size.Height),
+				SiliconePrice: prices[g].SiliconePrice,
+				LedPrice:      prices[g].LEDPrice,
+				PlexiPrice:    prices[g].PlexiPrice,
 			})
 		}
 

@@ -50,13 +50,13 @@
         <div class="block title">
             <h1>Neon Pricer</h1>
         </div>
-        <div class="block content form">
-            <form id='form' hx-encoding='multipart/form-data' hx-post='/compute' hx-target="next .block">
+        <div class="block content">
+            <form hx-encoding='multipart/form-data' hx-post='/compute' hx-target="next .block">
                 <input type='file' name='file'>
                 <button>
                     Compute
                 </button>
-                <progress id='progress' value='0' max='100'></progress>
+                <div hx-get='/input' hx-trigger="load" hx-target="this"></div>
             </form>
             <script>
                 htmx.on('#form', 'htmx:xhr:progress', function(evt) {

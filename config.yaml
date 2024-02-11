@@ -13,8 +13,6 @@ leds:
     price: 4.20
   - name: pixel
     price: 8.40
-  - name: pixel2
-    price: 8.40
 plexis:
   - name: incolore
     price: 50

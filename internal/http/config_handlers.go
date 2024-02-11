@@ -4,16 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 
 	"theo303/neon-pricer/conf"
 	"theo303/neon-pricer/internal/usecases"
 
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	siliconeParam = "silic"
 )
 
 type configHandlers struct {
@@ -24,18 +19,6 @@ func (ch configHandlers) getConfig() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "config.html", ch.config)
 	}
-}
-
-func parseParamInPostForm(c *gin.Context, key string) (float64, error) {
-	valueStr := c.PostForm(key)
-	if valueStr == "" {
-		return 0, fmt.Errorf("key %s not found", key)
-	}
-	value, err := strconv.ParseFloat(valueStr, 64)
-	if err != nil {
-		return 0, fmt.Errorf("parsing %s: %w", valueStr, err)
-	}
-	return value, nil
 }
 
 func (ch configHandlers) setConfig() gin.HandlerFunc {
@@ -55,5 +38,25 @@ func (ch configHandlers) setConfig() gin.HandlerFunc {
 		}
 
 		c.Status(http.StatusNoContent)
+	}
+}
+
+type radioButton struct {
+	Name      string
+	IsDefault bool
+}
+
+func (ch configHandlers) getInput() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data := struct {
+			Plexis []radioButton
+		}{}
+		for _, plexi := range ch.config.Plexis {
+			data.Plexis = append(data.Plexis, radioButton{
+				Name:      plexi.Name,
+				IsDefault: plexi.Name == "incolore",
+			})
+		}
+		c.HTML(http.StatusOK, "input.html", data)
 	}
 }
